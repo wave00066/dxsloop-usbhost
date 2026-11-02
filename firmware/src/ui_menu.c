@@ -108,7 +108,7 @@ UI_SMALL static const char *mi_value(uint32_t i, uint16_t *c)
         return R[usb_rate % 3u];
     }
 #if FELUCCA_USB_HOST
-    case MI_HOST: return uh.want ? "ON" : "OFF";     /* (never saved: every boot is a device, usb_host.c) */
+    case MI_HOST: return uh.want ? "ON" : "OFF";     /* (saved: project.c midi_part, bit 7 of DR MAP's byte) */
 #endif
     case MI_CPU1:                                     /* the render on both cores (fx.c); live, the sound is the same */
         *c = mi_cpu1_have() ? C_HI : C_DIM;
@@ -295,7 +295,8 @@ UI_SMALL static void mi_set(uint32_t i, int32_t s)
     }
 #if FELUCCA_USB_HOST
     case MI_HOST:                                      /* right ON, left OFF, OCT+ toggles; main.c uh_task switches the
-                                                        * port. Not saved: the next boot is a device (updates work) */
+                                                        * port. Saved when the menu closes: the next boot is a host too
+                                                        * (OCT- held at power-on: recovery, a device for updates) */
         uh.want = (uint8_t)(s > 0 ? 1u : s < 0 ? 0u : !uh.want);
         break;
 #endif

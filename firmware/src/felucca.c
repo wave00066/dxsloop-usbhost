@@ -49,7 +49,7 @@
 #endif
 #ifndef FELUCCA_USB_HOST
 #define FELUCCA_USB_HOST 1       /* USB MIDI host (usb_host.c, from Melodee): menu USB HOST turns the USB-C port into a host
-                                  * for a USB-MIDI keyboard or synth; never saved: every boot is a device again */
+                                  * for a USB-MIDI keyboard or synth; saved: a host from boot (OCT- at power-on: recovery) */
 #endif
 #include "usb.c"
 #ifndef FELUCCA_UART

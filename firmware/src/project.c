@@ -846,6 +846,15 @@ static side_rec_t side_out;
  * The theme and the favourites ride in the side record of the same copy (storage.c st_side, ui.c side_rec_t). (SLOOP
  * keeps its SYN drum kits between the two: not here) */
 #define MIDI_PART (2u * ML_N + 8u)
+/* USB HOST (dxsloop-usbhost): bit 7 of the DR MAP | CLK OUT byte keeps the port a host from one boot to the next.
+ * An older sloopDX 4.0 reads that byte as out of range: DR MAP and CLK OUT off, nothing else. Recovery (OCT- held at
+ * power-on) never reads it, so an update over USB always works. */
+static uint8_t host_boot;
+#if FELUCCA_USB_HOST
+static uint32_t host_saved_bit(void) { return uh.want != 0u; }
+#else
+static uint32_t host_saved_bit(void) { return 0u; }
+#endif
 _Static_assert(sizeof(persist_t) + MIDI_PART <= ST_PAYLOAD_MAX, "the settings object fits its sector");
 static uint8_t midi_saved[MIDI_PART];               /* the part as flash has it (settings_save: written when it differs) */
 UI_SMALL static void midi_part_fill(uint8_t *b)
@@ -857,7 +866,7 @@ UI_SMALL static void midi_part_fill(uint8_t *b)
     b[2u * ML_N + 3u] = (uint8_t)(midi_set[3] | midi_set[4] << 7);
     b[2u * ML_N + 4u] = midi_set[5];
     b[2u * ML_N + 5u] = midi_set[6];
-    b[2u * ML_N + 6u] = (uint8_t)(midi_set[7] | midi_set[9] << 1);
+    b[2u * ML_N + 6u] = (uint8_t)(midi_set[7] | midi_set[9] << 1 | host_saved_bit() << 7);
     b[2u * ML_N + 7u] = midi_set[8];
 }
 UI_SMALL static int midi_part_default(const uint8_t *b)
@@ -886,8 +895,9 @@ UI_SMALL static void midi_part_read(const uint8_t *b)
     midi_set[4] = (uint8_t)(b[2u * ML_N + 3u] >> 7);
     midi_set[5] = (uint8_t)(b[2u * ML_N + 4u] >= 1u && b[2u * ML_N + 4u] <= 12u ? b[2u * ML_N + 4u] : 2u);
     midi_set[6] = (uint8_t)(b[2u * ML_N + 5u] <= 16u ? b[2u * ML_N + 5u] : 0u);
-    midi_set[7] = (uint8_t)(b[2u * ML_N + 6u] <= 3u ? b[2u * ML_N + 6u] & 1u : 0u);
-    midi_set[9] = (uint8_t)(b[2u * ML_N + 6u] <= 3u ? b[2u * ML_N + 6u] >> 1 : 0u);
+    midi_set[7] = (uint8_t)((b[2u * ML_N + 6u] & 127u) <= 3u ? b[2u * ML_N + 6u] & 1u : 0u);
+    midi_set[9] = (uint8_t)((b[2u * ML_N + 6u] & 127u) <= 3u ? (b[2u * ML_N + 6u] >> 1) & 1u : 0u);
+    host_boot = (uint8_t)(b[2u * ML_N + 6u] >> 7);   /* USB HOST fixed (taken at boot only: midi_part_boot) */
     midi_set[8] = (uint8_t)(b[2u * ML_N + 7u] <= 16u ? b[2u * ML_N + 7u] : 0u);
     song.g[G_CH1] = midi_set[0], song.g[G_CH2] = midi_set[1], song.g[G_CH3] = midi_set[2];
     song.g[G_DRCH] = midi_set[3], song.g[G_CHOTH] = midi_set[4], song.g[G_BEND] = midi_set[5];
@@ -919,6 +929,9 @@ static void midi_part_boot(void)                    /* the MIDI part of the sett
         ml_tab[k] = 0;
     if (st_current(OBJ_SETTINGS, &h) >= 0 && h.len == sizeof(persist_t) + MIDI_PART)
         midi_part_read(st_buf + sizeof(persist_t));
+#if FELUCCA_USB_HOST
+    uh.want = host_boot;                            /* main.c uh_task makes the port a host at once */
+#endif
     midi_part_fill(midi_saved);
 }
 #endif

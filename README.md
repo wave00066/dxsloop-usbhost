@@ -19,7 +19,8 @@ Free and open source (GPL-3.0). A fork of <a href="https://github.com/isod89/slo
 > becomes a host for a class-compliant USB-MIDI keyboard or synth, directly or through one externally powered hub.
 > A keyboard plays sloopDX as the TRS jack does (channels, CCs, bend, clock); the tracks' MIDI out goes to a USB synth.
 > The port does not power the device: use a keyboard with its own power supply, or a powered hub. The setting is
-> never saved: every power-on starts as a normal USB device, so updates and the web editor always work. The host code
+> saved when the menu closes: with USB HOST ON the FM-1 starts as a host at every power-on. For updates or the web
+> editor set USB HOST OFF, or hold **OCT-** while switching on (USB rescue, always a device). The host code
 > is [Melodee](https://github.com/keremimo/melodee)'s (Kerem Kilic, recursivefieldinstruments, GPL-3.0), ported to
 > sloopDX. Its host tests pass; on hardware it is **not tested yet**.
 

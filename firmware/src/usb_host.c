@@ -9,8 +9,9 @@
  * USB MIDI host on USB0 (FELUCCA_USB_HOST), included by usb.c after the SIE helpers and ep1_take.
  *
  * The port is either the computer-facing device (usb.c) or, when the menu's USB HOST is on, the host of a class
- * compliant USB-MIDI controller, alone or behind a hub. The choice is never saved: every boot is a device, so
- * the update paths always work. Switching is the main loop's (uh_task); usb.up is 0 while the port is a host.
+ * compliant USB-MIDI controller, alone or behind a hub. The choice is saved with the settings (project.c
+ * midi_part, dxsloop-usbhost): a host stays a host from boot. Updates: OCT- held at power-on (recovery, a device
+ * whatever was saved), or USB HOST OFF. Switching is the main loop's (uh_task); usb.up is 0 while the port is a host.
  *
  *   main loop (uh_task)   waits for a device, resets the bus, and enumerates it with blocking EP0 transfers
  *                         (hub: powers the ports, resets those with something on them, and tries each device
