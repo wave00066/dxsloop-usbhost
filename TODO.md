@@ -235,3 +235,7 @@ Drei-Wege-Merge mit SLOOP 2.5 (`fa9ce57`) als Basis, upstream `ba54ba5` (v2.7). 
   ansehen, mit committen. Nach Änderungen an den Render-Schleifen: `BUDGET_UPDATE=1`.
 - `tools/level_presets.py` braucht numpy und scipy (`pip install numpy scipy`).
 - Zurück zur Original-Firmware: M-UPGRADE. Totalausfall: FM-1-transporter (XIAO RP2040).
+
+## USB HOST (this fork)
+
+- Test on a real FM-1: a self-powered keyboard direct, a bus-powered one behind a powered hub, a USB synth on the OUT side; unplug while notes are held; HOST OFF gives the computer back.
