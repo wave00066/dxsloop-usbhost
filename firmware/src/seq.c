@@ -2577,6 +2577,18 @@ static void events_block(uint32_t n)
         route_was = (uint8_t)rt;
         chans_was = chans;
     }
+#if FELUCCA_USB_HOST
+    if (midi_usb_lost) {                              /* USB HOST: the controller went (or the port changed): what it
+                                                       * held would hang, so every note ends, the pedals and wheels too */
+        midi_usb_lost = 0;
+        panic_req = (uint8_t)((1u << NTRK) - 1u);
+        memset(midi_sel_on, 0, sizeof midi_sel_on);
+        memset(ch_sus, 0, sizeof ch_sus);
+        memset(ch_bend, 0, sizeof ch_bend);
+        for (i = 0; i < NTRK; i++)
+            trk[i].bend = 0;
+    }
+#endif
     pr = panic_req;
     panic_req = 0;
     {

@@ -23,6 +23,9 @@
 #ifndef FELUCCA_CDC
 #define FELUCCA_CDC 0
 #endif
+#ifndef FELUCCA_USB_HOST
+#define FELUCCA_USB_HOST 0          /* felucca.c turns it on (menu USB HOST, usb_host.c); the update loader never has it */
+#endif
 #ifndef FELUCCA_UAC
 #define FELUCCA_UAC 0
 #endif
@@ -132,6 +135,7 @@ static struct {
     uint32_t suspends, max_gap, retries, frame_stalls;   /* diagnostics: suspend events, longest run of polls without SOF */
     uint16_t frame, frame_same;  /* last SOF frame number and how long it has not moved (x 10 ms) */
     uint8_t detached;            /* usb_detach() was called: no retry */
+    uint32_t retry_ms;           /* usb_retry's last try (usb_host.c sets it back to retry at once) */
     volatile uint8_t suspended;  /* bus idle > 3 ms (unplugged or host asleep): the UI hides "USB" */
     uint8_t last_setup[8];
     uint8_t sysex[16];
@@ -159,9 +163,11 @@ static volatile uint32_t so_w, so_r;
 #define MQ 64u
 static uint32_t midi_in_q[MQ], midi_out_q[MQ];
 static volatile uint32_t mi_w, mi_r, mo_w, mo_r;
+static volatile uint8_t usb_host_out;               /* USB HOST: an attached device takes MIDI out (usb_host.c) */
+static volatile uint8_t midi_usb_lost;              /* USB HOST: the controller went: seq.c releases every note */
 static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
 {
-    if (usb.config && mo_w - mo_r < MQ) {
+    if ((usb.config || usb_host_out) && mo_w - mo_r < MQ) {
         midi_out_q[mo_w % MQ] = pkt;
         RING_PUBLISH();
         mo_w++;
@@ -1236,9 +1242,17 @@ static void uac_service(void)
 }
 #endif
 
+#include "usb_host.c"                                   /* FELUCCA_USB_HOST: the port as a MIDI host (menu USB HOST) */
+
 static void usb_poll(void)                              /* TIMER5 ISR, 2 kHz */
 {
     uint32_t iu, it, ir;
+#if FELUCCA_USB_HOST
+    if (uh.run) {                                       /* a host: the MIDI endpoints, nothing of the device side */
+        uh_poll();
+        return;
+    }
+#endif
     if (!usb.up)
         return;
     if (fm1_usb_sof_take()) {                           /* SOF pending: not a reliable "host is there", */
@@ -1351,10 +1365,13 @@ static void usb_start(void)                             /* boot, or main-loop re
  * later still enumerates. */
 static void usb_retry(uint32_t now_ms)
 {
-    static uint32_t t;
-    if (usb.up || usb.detached || now_ms - t < 1000u)
+    if (usb.up || usb.detached || now_ms - usb.retry_ms < 1000u)
         return;
-    t = now_ms;
+#if FELUCCA_USB_HOST
+    if (uh.on)
+        return;                                         /* the port is a host: uh_task owns it */
+#endif
+    usb.retry_ms = now_ms;
     usb.retries++;
     usb_start();
 }
@@ -1363,5 +1380,10 @@ static void usb_detach(void)
 {
     usb.detached = 1;
     usb.up = 0;
+#if FELUCCA_USB_HOST
+    uh.run = 0;
+    uh.on = uh.want = 0;
+    usb_host_out = 0;
+#endif
     fm1_usb_off();
 }

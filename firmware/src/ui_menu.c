@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
 /* sloopDX menu (HOME held; 4.0: SLOOP 2.7's), in sections as the pages are (2.4): SCREEN (COLOR, ZOOM, KNOB ACCEL (2.7)), LIGHTS (LIGHTS, KEYS, NOTES),
- * AUDIO (LOWCUT, USB AUDIO, USB SERIAL (FELUCCA_CDC builds only), USB RATE (2.7 beta)), SYSTEM (2ND CORE (dualcore), HARDWARE CALIBRATION, LEARN CLEAR (2.6), ABOUT).
+ * AUDIO (LOWCUT, USB AUDIO, USB SERIAL (FELUCCA_CDC builds only), USB RATE (2.7 beta)), USB HOST (FELUCCA_USB_HOST:
+ * the USB-C port hosts a USB-MIDI keyboard or synth; from Melodee), SYSTEM (2ND CORE (dualcore), HARDWARE CALIBRATION, LEARN CLEAR (2.6), ABOUT).
  * SELECT goes to the section before / after (stopping at the ends), KNOB 1..4 set the section's settings in order (the knob's colour marks
  * its row), PRESETS moves the cursor; OCT+ steps the cursor's setting round or opens it (CALIBRATION, ABOUT),
  * OCT- closes (from ABOUT: back to the section). sloopDX: on ABOUT, OCT+ twice: FACTORY RESET. */
@@ -11,15 +12,29 @@ enum { MI_COLOR, MI_ZOOM, MI_ACCEL, MI_LIGHTS, MI_KEYS, MI_NOTES, MI_LOWCUT, MI_
 #if FELUCCA_CDC
        MI_SERIAL,
 #endif
-       MI_RATE, MI_CPU1, MI_PANEL, MI_LCLEAR, MI_ABOUT, MI_COUNT };
+       MI_RATE,
+#if FELUCCA_USB_HOST
+       MI_HOST,
+#endif
+       MI_CPU1, MI_PANEL, MI_LCLEAR, MI_ABOUT, MI_COUNT };
 static const char *const MI_NAME[MI_COUNT] = {"COLOR", "ZOOM", "KNOB ACCEL", "LIGHTS", "KEYS", "NOTES", "SPEAKER LOWCUT", "USB AUDIO",
 #if FELUCCA_CDC
                                               "USB SERIAL",
 #endif
-                                              "USB RATE", "2ND CORE", "HARDWARE CALIBRATION", "MIDI LEARN CLEAR", "ABOUT"};
+                                              "USB RATE",
+#if FELUCCA_USB_HOST
+                                              "USB HOST",
+#endif
+                                              "2ND CORE", "HARDWARE CALIBRATION", "MIDI LEARN CLEAR", "ABOUT"};
+#if FELUCCA_USB_HOST                               /* (USB HOST: a section of its own, AUDIO has its four rows) */
+enum { MS_SCREEN, MS_LIGHTS, MS_AUDIO, MS_HOST, MS_SYSTEM, MS_COUNT };
+static const char *const MS_NAME[MS_COUNT] = {"SCREEN", "LIGHTS", "AUDIO", "USB HOST", "SYSTEM"};
+static const uint8_t MS_FIRST[MS_COUNT + 1] = {MI_COLOR, MI_LIGHTS, MI_LOWCUT, MI_HOST, MI_CPU1, MI_COUNT};
+#else
 enum { MS_SCREEN, MS_LIGHTS, MS_AUDIO, MS_SYSTEM, MS_COUNT };
 static const char *const MS_NAME[MS_COUNT] = {"SCREEN", "LIGHTS", "AUDIO", "SYSTEM"};   /* (AUDIO: and USB) */
 static const uint8_t MS_FIRST[MS_COUNT + 1] = {MI_COLOR, MI_LIGHTS, MI_LOWCUT, MI_CPU1, MI_COUNT};   /* rows of each */
+#endif
 
 /* FACTORY RESET (sloopDX, from ABOUT): every object in flash erased (the projects, the working project, the user
  * presets, the 8 DX7 banks, MY KIT, the settings with the panel table), then a reboot: the FM-1 starts as freshly
@@ -92,6 +107,9 @@ UI_SMALL static const char *mi_value(uint32_t i, uint16_t *c)
         static const char *const R[3] = {"AUTO", "44.1 KHZ", "48 KHZ"};
         return R[usb_rate % 3u];
     }
+#if FELUCCA_USB_HOST
+    case MI_HOST: return uh.want ? "ON" : "OFF";     /* (never saved: every boot is a device, usb_host.c) */
+#endif
     case MI_CPU1:                                     /* the render on both cores (fx.c); live, the sound is the same */
         *c = mi_cpu1_have() ? C_HI : C_DIM;
         return cpu1_off ? "OFF" : "ON";
@@ -119,6 +137,9 @@ UI_SMALL static void draw_menu(void)
                    settings.zoom * 104729u + lights_lvl * 1299709u + lights_keys * 15485863u + ml_count() * 2654435u +
                    lights_notes * 32452843u + usb_full * 49979687u + usb_serial * 86028121u + usb_rate * 15486719u + theme_shown() * 32452867u + theme.crc + cpu1_off * 122949829u +
                    knob_accel_off * 179424673u + ui.menu_arm * 97u;
+#if FELUCCA_USB_HOST
+    sig += uh.want * 373587883u + uh.on * 13u + uh.run * 1013u + uh.out_mps * 7u;
+#endif
     if (!ui.force && sig == ui.menu_sig)
         return;
     ui.menu_sig = sig;
@@ -209,6 +230,11 @@ UI_SMALL static void draw_menu(void)
                 if (i == MI_SERIAL && usb_serial != usb_cdc_now())
                     cv_text(xv + 8, y + 30, &FONT_S, "RESTART", C_AMB);   /* (usb.c: at the next start) */
 #endif
+#if FELUCCA_USB_HOST
+                if (i == MI_HOST && uh.want)            /* what the port is doing */
+                    cv_text(xv + 8, y + 30, &FONT_S, uh.run ? (uh.in_ep ? "MIDI READY" : "MIDI OUT") : "PLUG A DEVICE",
+                            uh.run ? C_HI : C_AMB);
+#endif
                 if (i == MI_CPU1 && !mi_cpu1_have())
                     cv_text(xv + 8, y + 30, &FONT_S, "NOT RUNNING", C_AMB);   /* (cpu1.c: ABOUT says 1 CORE) */
             }
@@ -267,6 +293,12 @@ UI_SMALL static void mi_set(uint32_t i, int32_t s)
         fx_lowcut = (uint8_t)(settings.lowcut != 0);
         break;
     }
+#if FELUCCA_USB_HOST
+    case MI_HOST:                                      /* right ON, left OFF, OCT+ toggles; main.c uh_task switches the
+                                                        * port. Not saved: the next boot is a device (updates work) */
+        uh.want = (uint8_t)(s > 0 ? 1u : s < 0 ? 0u : !uh.want);
+        break;
+#endif
     case MI_USB:                                       /* right FULL, left MASTER */
         usb_full = (uint8_t)(s > 0 ? 1u : s < 0 ? 0u : !usb_full);
         break;

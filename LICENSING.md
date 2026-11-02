@@ -13,6 +13,9 @@ Copyright (C) 2026 isod89 (SLOOP)
 Copyright (C) 2026 Andre Rezemini (the second core: `firmware/src/cpu1.c`, the render split, `tests/cpu1_*`, `tests/mix_split_test.c`)
 Copyright (C) 2026 Charles Vestal (X0X: `firmware/hal/fm1_cpu1.h`, `firmware/hal/fm1_cpu1.S`, after Kerem Kilic's Melodee)
 sloopDX (C) 2026 Sven Trogus
+Copyright (C) 2026 Kerem Kilic (Ellic Studio) and Adrien Tibi (recursivefieldinstruments) (the USB MIDI host:
+`firmware/src/usb_host.c`, `firmware/src/usb_host_desc.h`, the host part of `firmware/hal/fm1_usb.h`,
+`tests/usb_host_test.c`, from Melodee, github.com/keremimo/melodee, GPL-3.0-only)
 
 ## What is code (GPL-3.0-only)
 

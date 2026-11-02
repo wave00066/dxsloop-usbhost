@@ -241,6 +241,15 @@ UI_SMALL static void fm1_main(void)
     for (;;) {
         uint32_t m = fm1_ms;
         fm1_wdt_feed();
+#if FELUCCA_USB_HOST
+        uh_task(fm1_ms);                                /* before usb_retry: a host port is not retried as a device */
+        if (uh.msg) {
+            static const char *const UH_TEXT[] = {"", "ON", "OFF", "MIDI READY", "NO MIDI DEVICE", "LOW SPEED",
+                                                  "DEVICE LOST"};
+            ui_say("USB HOST ", UH_TEXT[uh.msg % 7u]);
+            uh.msg = 0;
+        }
+#endif
         usb_retry(fm1_ms);
         if ((uint32_t)(m - healthy_since) >= 30000u && bootguard.pending) {
             bootguard_clear(&bootguard);     /* 30 s of this boot, even if TIMER4 survived reset */

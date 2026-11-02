@@ -83,6 +83,9 @@ run "soak: ${SOAK_MIN:-10} minutes of random live use (bounded, no hanging voice
 $CC -o "$OUT/upreset_test" tests/upreset_test.c
 run "user presets (UP_PUT parser, bank round trip, versions)" "$OUT/upreset_test"
 
+$CC -fsanitize=address,undefined -Ibuild/gen -Ifirmware/src -Ifirmware/hal -o "$OUT/usb_host_test" tests/usb_host_test.c
+run "USB MIDI host (from Melodee): enumeration, hubs, input, output, faults, back to device" "$OUT/usb_host_test"
+
 $CC -o "$OUT/midi_uart_test" tests/midi_uart_test.c
 run "TRS MIDI parser" "$OUT/midi_uart_test"
 $CC -Ifirmware/hal -o "$OUT/encoder_test" tests/encoder_test.c

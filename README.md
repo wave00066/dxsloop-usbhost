@@ -15,6 +15,14 @@ Free and open source (GPL-3.0). A fork of <a href="https://github.com/isod89/slo
 <p align="center"><a href="https://www.youtube.com/watch?v=qas9XWBgpL4"><img src="https://img.youtube.com/vi/qas9XWBgpL4/maxresdefault.jpg" alt="sloopDX 2.5 in a minute (YouTube)" width="640"></a><br>
 <a href="https://www.youtube.com/watch?v=qas9XWBgpL4">sloopDX 2.5 in a minute</a>: FM with cutoff and resonance, the sounds, drums you program, 128 steps, OMNI.</p>
 
+> **This fork adds USB HOST** (menu, hold HOME → section **USB HOST**, KNOB 1 → **ON**): the FM-1's USB-C port
+> becomes a host for a class-compliant USB-MIDI keyboard or synth, directly or through one externally powered hub.
+> A keyboard plays sloopDX as the TRS jack does (channels, CCs, bend, clock); the tracks' MIDI out goes to a USB synth.
+> The port does not power the device: use a keyboard with its own power supply, or a powered hub. The setting is
+> never saved: every power-on starts as a normal USB device, so updates and the web editor always work. The host code
+> is [Melodee](https://github.com/keremimo/melodee)'s (Kerem Kilic, recursivefieldinstruments, GPL-3.0), ported to
+> sloopDX. Its host tests pass; on hardware it is **not tested yet**.
+
 ---
 
 sloopDX turns the FM-1 into what it says on the box: an FM synthesizer. There is one engine, a six-operator DX7 voice (Dexed's msfa core, ported to integer C and checked against Dexed (99 % of samples identical, the rest within 1-2 LSB)). The drum track plays FM drums made with the same engine. SLOOP's live workflow stays as it is: tracks, layers, sequencer, song mode and effects — and, from SLOOP 2.3, **USB audio**, a **MIDI keyboard on the jack**, **MIDI clock**, **lights for playing in the dark** and a **full backup**. The sample engines, sample sets and the other eight engines are gone.
