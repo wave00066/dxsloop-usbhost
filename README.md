@@ -22,7 +22,7 @@ Free and open source (GPL-3.0). A fork of <a href="https://github.com/isod89/slo
 > saved when the menu closes: with USB HOST ON the FM-1 starts as a host at every power-on. For updates or the web
 > editor set USB HOST OFF, or hold **OCT-** while switching on (USB rescue, always a device). The host code
 > is [Melodee](https://github.com/keremimo/melodee)'s (Kerem Kilic, recursivefieldinstruments, GPL-3.0), ported to
-> sloopDX. Its host tests pass; on hardware it is **not tested yet**.
+> sloopDX. Its host tests pass, and it is tested on an FM-1 with a USB-MIDI keyboard.
 
 ---
 

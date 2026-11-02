@@ -321,7 +321,7 @@ def main():
         if not m:
             raise SystemExit(f"--release {a.release}: use X.Y or X.Y-suffix, one digit each")
         PRODUCT = "FM-1_9" + m[1] + m[2]
-        VERSION = "sloopDX " + (a.release.upper() if "BETA" in a.release.upper() else a.release.upper() + " BETA")
+        VERSION = "sloopDX " + a.release.upper()  # (dxsloop-usbhost: BETA only when the tag says so, v4.0-beta2)
         name = f"felucca-{a.release}.fwsc"
     fm1pkg_make.SDK = a.sdk
     for rel, sha in SDK_SHA256.items():          # fail early without the SDK
